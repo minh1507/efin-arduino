@@ -12,8 +12,8 @@ Preferences preferences;
 WebServer server(80);
 WebSocketsServer webSocket(81);
 
-#define DHTPIN 4        
-#define DHTTYPE DHT11   
+#define DHTPIN 26        
+#define DHTTYPE DHT11  
 DHT dht(DHTPIN, DHTTYPE);
 
 const int ledPins[] = {5, 18, 19, 21};  
@@ -34,6 +34,12 @@ void handleGetDHT() {
     StaticJsonDocument<100> doc;
     doc["temperature"] = dht.readTemperature();
     doc["humidity"] = dht.readHumidity();
+
+    Serial.print("Temperature: ");
+    Serial.print(dht.readTemperature());
+    Serial.print("°C, Humidity: ");
+    Serial.print(dht.readHumidity());
+    Serial.println("%");
     
     String response;
     serializeJson(doc, response);
@@ -159,6 +165,10 @@ void setup() {
     Serial.begin(115200);
     preferences.begin("wifi", false);
 
+    // preferences.remove("ssid");
+    // preferences.remove("password");
+    // preferences.end();
+
     storedSSID = preferences.getString("ssid", "");
     storedPassword = preferences.getString("password", "");
 
@@ -186,6 +196,12 @@ void setup() {
 void loop() {
     server.handleClient();
     webSocket.loop();
-    sendDHTData();
-    delay(2000);
+
+    static unsigned long lastDHTRead = 0;
+    if (millis() - lastDHTRead > 2000) {
+        sendDHTData();
+        lastDHTRead = millis();
+    }
+
+    delay(10); // Giữ ESP ổn định
 }
